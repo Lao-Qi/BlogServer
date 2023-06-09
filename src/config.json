@@ -1,0 +1,5 @@
+{
+    "port": 8080,
+    "sessionKey": "your server session key",
+    "authKeyTimeout": 604800
+}

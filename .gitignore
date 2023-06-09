@@ -1,0 +1,7 @@
+node_modules
+dist
+*.log*
+uploads
+database.db
+sessionKey.key
+dist.zip

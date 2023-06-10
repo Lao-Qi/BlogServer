@@ -47,7 +47,7 @@ essay.get('/search', verifyQuery('key'), verifyQuery('num', true), async (req, r
 	}
 })
 
-essay.get('/all', verifyToken(), async (_, res) => {
+essay.get('/all', async (_, res) => {
 	essayRepository
 		.find()
 		.then((essays) => {

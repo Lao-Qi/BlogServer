@@ -14,8 +14,8 @@ async function bootstarp() {
 	}
 
 	await generateRSAKey()
-	const { router } = await import('./api/router')
 
+	const { router } = await import('./api/router')
 	const port = config.port || 8080
 	const app = express()
 

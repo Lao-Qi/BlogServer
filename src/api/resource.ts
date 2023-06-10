@@ -48,7 +48,7 @@ resource.get('/search', verifyQuery('key'), async (req, res) => {
 	}
 })
 
-resource.get('/all', verifyToken(), async (_, res) => {
+resource.get('/all', async (_, res) => {
 	try {
 		const resources = await resourceRepository.find()
 		res.send({ code: 200, msg: 'Search succeed', data: resources })

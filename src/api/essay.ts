@@ -14,8 +14,8 @@ const essayRepository = database.getRepository(Essay)
 
 essay.get('/', verifyQuery('id'), async (req, res) => {
 	try {
-		const essays = await essayRepository.findOneBy({ id: parseInt(req.query.id as string) })
-		res.send({ code: 200, msg: 'Search succeed', data: essays ?? {} })
+		const essay = await essayRepository.findOneBy({ id: parseInt(req.query.id as string) })
+		res.send({ code: 200, msg: 'Search succeed', data: essay ? transformedEssay(essay) : {} })
 	} catch (err) {
 		res.status(500).send({ code: 200, msg: 'Search error' })
 	}
@@ -41,7 +41,14 @@ essay.get('/search', verifyQuery('key'), verifyQuery('num', true), async (req, r
 			take: parseInt(req.query.num as string) || 1
 		})
 
-		res.send({ code: 200, msg: 'Search succeed', data: req.query.single === '1' ? essays[0] ?? {} : essays })
+		let data = {}
+		if (req.query.single) {
+			data = essays[0] ? transformedEssay(essays[0]) : {}
+		} else {
+			data = essays.map((essay) => transformedEssay(essay))
+		}
+
+		res.send({ code: 200, msg: 'Search succeed', data })
 	} catch (err) {
 		res.status(500).send({ code: 200, msg: 'Search error' })
 	}
@@ -51,7 +58,11 @@ essay.get('/all', async (_, res) => {
 	essayRepository
 		.find()
 		.then((essays) => {
-			res.send({ code: 200, msg: 'Search succeed', data: essays })
+			res.send({
+				code: 200,
+				msg: 'Search succeed',
+				data: essays.map((essay) => transformedEssay(essay))
+			})
 		})
 		.catch((err) => {
 			console.error(err)
@@ -61,8 +72,8 @@ essay.get('/all', async (_, res) => {
 
 essay.post('/upload', verifyToken(), multer({ dest: uploadPath }).any(), verifyFile('essay', uploadPath), async (req, res) => {
 	const essay = new Essay()
-	essay.name = req.body.name ?? req.file.originalname
-	essay.originalname = req.file.originalname
+	essay.name = req.body.name ?? Buffer.from(req.file.originalname).toString('utf-8')
+	essay.originalname = Buffer.from(req.file.originalname).toString('utf-8')
 	essay.size = req.file.size
 	essay.decs = req.body.decs
 	essay.filename = req.file.filename
@@ -137,3 +148,16 @@ essay.delete('/remove', verifyQuery('id'), verifyToken(), async (req, res) => {
 		res.status(500).send({ code: 500, msg: `Delete ${req.query.id} data error` })
 	}
 })
+
+function transformedEssay(essay: Essay) {
+	return {
+		id: essay.id,
+		decs: essay.decs,
+		name: essay.name,
+		tags: essay.tags,
+		uploadTime: essay.uploadTime,
+		updateTime: essay.updateTime,
+		mimeType: essay.mimetype,
+		size: essay.size
+	}
+}

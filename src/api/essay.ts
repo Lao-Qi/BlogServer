@@ -21,6 +21,26 @@ essay.get('/', verifyQuery('id'), async (req, res) => {
 	}
 })
 
+essay.get('/getAll', async (_, res) => {
+	try {
+		const essays = await essayRepository.find()
+		res.send({ code: 200, msg: 'Search succeed', data: essays.map((essay) => transformedEssay(essay)) })
+	} catch (err) {
+		res.status(500).send({ code: 200, msg: 'Search error' })
+	}
+})
+
+essay.get('/read', verifyQuery('name'), async (req, res) => {
+	try {
+		const essay = await essayRepository.findOneBy({ name: req.query.name as string })
+		const file = await readFile(join(process.cwd(), uploadPath, essay.filename), 'utf-8')
+		res.status(200).send({ code: 200, data: { info: transformedEssay(essay), file } })
+	} catch (err) {
+		console.error(err)
+		res.status(500).send({ code: 500, msg: 'Server opertion on error' })
+	}
+})
+
 essay.get('/search', verifyQuery('key'), verifyQuery('num', true), async (req, res) => {
 	try {
 		const essays = await essayRepository.find({
@@ -54,7 +74,7 @@ essay.get('/search', verifyQuery('key'), verifyQuery('num', true), async (req, r
 	}
 })
 
-essay.get('/all', async (_, res) => {
+essay.get('/all', verifyToken(), async (_, res) => {
 	essayRepository
 		.find()
 		.then((essays) => {

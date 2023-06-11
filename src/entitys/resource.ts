@@ -9,9 +9,6 @@ export class Resource {
 	name: string
 
 	@Column({ type: 'text' })
-	decs: string
-
-	@Column({ type: 'text' })
 	filename: string
 
 	@Column({ type: 'text' })
@@ -36,6 +33,6 @@ export class Resource {
 	updateTime: number
 
 	setTags(tags: string[]) {
-		this.tags = [...tags].join('--')
+		this.tags = Array.isArray(tags) ? tags.join('--') : tags
 	}
 }

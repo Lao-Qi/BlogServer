@@ -1,5 +1,6 @@
 const copy = require("copy")
 const copydirectory = require("copydirectory")
+const { zip } = require("zip-a-folder")
 const { join } = require("path")
 const { mkdirSync } = require("fs")
 
@@ -10,6 +11,8 @@ const files = [".npmrc", ".yarnrc", "yarn.lock", "package.json", "ecosystem.conf
 async function run() {
     await copyFile(files.map(path => join(process.cwd(), path)), join(process.cwd(), "./dist"))
     dirs.forEach(path => copyDir(join(process.cwd(), path), join(process.cwd(), "./dist", path)))
+
+    await zip(join(process.cwd(), "./dist"), join(process.cwd(), "./dist.zip"))
 }
 
 function copyFile(path, target) {

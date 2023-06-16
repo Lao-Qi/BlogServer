@@ -1,16 +1,20 @@
 import { Router } from 'express'
 import multer from 'multer'
+import multiparty from 'multiparty'
+import { randomUUID } from 'crypto'
 import { unlink } from 'fs/promises'
-import { createReadStream } from 'fs'
+import { createReadStream, createWriteStream, readFileSync } from 'fs'
 import { Like } from 'typeorm'
-import { join } from 'path/win32'
+import { join } from 'path'
 import { database } from '../database'
 import { Resource } from '../entitys'
-import { verifyToken, verifyQuery, verifyFile } from '../middleware'
+import { verifyToken, verifyQuery, verifyFile, verifyBody } from '../middleware'
 
 export const resource = Router()
 
 const uploadPath = 'uploads/resource/'
+const uploadCatch = 'uploads/cache/'
+const catcheMap: { [key: string]: any[] } = {}
 const resourceRepository = database.getRepository(Resource)
 
 resource.get('/', verifyQuery('id'), async (req, res) => {
@@ -93,18 +97,79 @@ resource.get('/all', verifyToken(), async (_, res) => {
 	}
 })
 
-resource.post('/upload', verifyToken(), multer({ dest: uploadPath }).any(), verifyFile('resource', uploadPath), async (req, res) => {
+resource.post('/upload', verifyToken(), async (req, res) => {
 	try {
-		const resource = new Resource()
-		resource.name = Buffer.from(req.body.name ?? req.file.originalname).toString('utf-8')
-		resource.originalname = Buffer.from(req.file.originalname).toString('utf-8')
-		resource.size = req.file.size
-		resource.filename = req.file.filename
-		resource.mimetype = req.file.mimetype
-		resource.setTags(req.body.tags ? String(req.body.tags).split('--') : [])
+		const pushForm = new multiparty.Form({
+			uploadDir: uploadCatch
+		})
 
-		const nresource = await resourceRepository.save(resource)
-		res.send({ code: 200, msg: 'Upload succeed', data: { id: nresource.id, time: nresource.uploadTime, name: nresource.name } })
+		pushForm.parse(req, (err, fields, files) => {
+			if (err) {
+				console.log(err)
+				res.status(500).send({ code: 500, msg: 'Upload error' })
+				return
+			}
+
+			console.log(fields)
+			console.log(files)
+
+			if (!fields['id'] || !fields['index']) {
+				res.status(400).send({ code: 400, msg: "Upload data 'id' or 'index' not found in body" })
+				return
+			}
+
+			const file = files.chunk[0]
+			const id = fields.id[0]
+			const index = fields.index[0]
+			catcheMap[id] ??= []
+			catcheMap[id].push({ ...file, index })
+
+			res.send({ code: 200, msg: 'Upload succeed' })
+		})
+	} catch (err) {
+		console.error(err)
+		res.status(500).send({ code: 500, msg: 'upload essay on server error' })
+	}
+})
+
+resource.post('/merge', verifyBody('id'), verifyBody('name'), verifyToken(), async (req, res) => {
+	try {
+		if (!catcheMap[req.body.id]) {
+			res.status(400).send({ code: 400, msg: 'Not found upload file' })
+			return
+		}
+
+		const filename = randomUUID()
+		const fileWrite = createWriteStream(join(process.cwd(), uploadPath, filename))
+		const chunks = catcheMap[req.body.id]
+		chunks.sort((a, b) => a.index - b.index)
+
+		/** 合并文件 */
+		for (const [_, chunkFile] of Object.entries(chunks)) {
+			console.log(chunkFile)
+
+			const chunk = readFileSync(chunkFile.path)
+			fileWrite.write(chunk)
+			await unlink(chunkFile.path)
+		}
+
+		delete catcheMap[req.body.id]
+
+		fileWrite.close()
+
+		/** 加入数据库 */
+		const resource = new Resource()
+		resource.mimetype = req.body.mimeType
+		resource.name = req.body.name
+		resource.tags = req.body.tags
+		resource.filename = filename
+		resource.size = parseInt(req.body.size)
+		resource.ext = req.body.ext
+		console.log(resource)
+
+		await resourceRepository.save(resource)
+
+		res.send({ code: 200, msg: 'Upload succeed' })
 	} catch (err) {
 		console.error(err)
 		res.status(500).send({ code: 500, msg: 'upload essay on server error' })
@@ -168,6 +233,6 @@ function transformedResource(resource: Resource) {
 		mimeType: resource.mimetype,
 		size: resource.size,
 		tags: resource.tags,
-		originalname: resource.originalname
+		ext: resource.ext
 	}
 }

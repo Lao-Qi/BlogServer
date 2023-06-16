@@ -11,9 +11,6 @@ export class Resource {
 	@Column({ type: 'text' })
 	filename: string
 
-	@Column({ type: 'text' })
-	originalname: string
-
 	@Column({ type: 'text', default: '' })
 	tags: string
 
@@ -22,6 +19,9 @@ export class Resource {
 
 	@Column({ type: 'text' })
 	mimetype: string
+
+	@Column({ type: 'text' })
+	ext: string
 
 	@Column({ type: 'int', nullable: true })
 	size: number | undefined

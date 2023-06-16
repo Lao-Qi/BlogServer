@@ -6,7 +6,7 @@ import { Key, encryptToken } from '../crypt'
 import config from '../config.json'
 
 export const auth = Router()
-const uploadPath = 'uploads/sessionKey/'
+const uploadPath = 'uploads/cache'
 
 auth.post('/login', multer({ dest: uploadPath }).any(), verifyFile('sessionKey', uploadPath), async (req, res) => {
 	const filePath = req.file['filepath']
@@ -19,7 +19,7 @@ auth.post('/login', multer({ dest: uploadPath }).any(), verifyFile('sessionKey',
 			res.setHeader('Access-Control-Expose-Headers', 'Authorization')
 			res.send({ code: 200, msg: 'Auth succeed' })
 		} else {
-			res.send({ code: 400, msg: 'Auth error' })
+			res.status(400).send({ code: 400, msg: 'Auth error' })
 		}
 	} catch (err) {
 		console.error(err)

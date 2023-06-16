@@ -12,17 +12,18 @@
 
 功能:
 
--   内置了 JWT 身份认证功能
--   SessionKey 密钥登录功能
--   基础数据的 CRUD
+-   SessionKey 密钥登录认证
+-   JWT 身份认证
+-   基本数据的 CRUD
 -   简单的打包方式
--   基础的文件上传功能
--   简化服务器部署方式(已有实践)
+-   基础的文件上传
+-   大文件切片上传
 
 运行：
 
 1.  运行`npm install`或`yarn`
 2.  运行`npm run dev`或`yarn dev`
+    推荐使用`yarn`
 
 部署(ubuntu(22 版本) 示例)：
 
@@ -35,3 +36,8 @@
 
 使用：
 该服务器可搭配`BlogServerTool`来进行管理
+
+管理员登录：
+此服务器目前是用`sessionKey.key`文件来认证管理员的，`sessionKey.key`文件会在服务器启动时生成在服务器目录下，需要服务器运维人员将其拉去到本地，并使用`BlogServerTool`登录
+
+    这个认证方式后续会改成，在本地生成`sessionKey.key`并上传到服务器目录下被其使用。
